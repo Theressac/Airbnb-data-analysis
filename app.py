@@ -1,163 +1,169 @@
-import pandas as pd
 import streamlit as st
-import plotly.express as px
-import tableauserverclient as TSC
+from streamlit_option_menu import option_menu
+import pymongo
+import pandas as pd
+import plotly_express as px
 
-st.set_page_config(layout="wide")
+#setting up streamlit
 
-st.write('# Airbnb Data Analysis project')
+st.set_page_config(page_title = "Airbnb data analysis | Theressa Coujandessamy",
+                   layout= "centered",
+                     initial_sidebar_state= "auto",
+                   menu_items={'About': """# This app is developed by *Theressa Coujandessamy*! 
+                                The data is gathered by mongodb atlas"""
+                               })
+st.sidebar.title("Airbnb Data Insights")
+#Creating the sidebar menu option
 
-data=pd.read_csv('Cleaned_Data.csv')
-cropped_data=data.copy()
 
-selectbox_dict={'property_type':'Select property type',
-                'room_type':'Select room type',
-                'bed_type':'Select bed type',
-                'cancellation_policy':'Select cancellation_policy',
-                'coutry':'Select Country'
-                }
+st.title("Airbnb Data Analysis")
 
-slider_dict={'accommodates':'Choose number of accomodates',
-             'bedrooms':'Choose number of bedrooms',
-             'beds':'Choose number of beds',
-             'bathrooms':'Choose number of bathrooms'
-             }
+#Cleaned Data 
+df = pd.read_csv('airbnb_cleaned_data4.csv')
 
-review_dict={'review_scores_accuracy':'Choose minimum score accuracy',
-             'review_scores_cleanliness':'Choose minimum cleanliness score',
-             'review_scores_checkin':'Choose minimum check in score',
-             'review_scores_communication':'Choose minimum communication score',
-             'review_scores_location':'Choose minimum location score',
-             'review_scores_value':'Choose minimum value score',
-             'review_scores_rating':'Choose minimum total rating'
-             }
 
-col1,col2=st.columns([0.5,0.5])
-
-#Give user options to select fields
-with col1:
     
-    col1_1,col1_2=st.columns([0.5,0.5])
-    with col1_1:
-        for key,value in selectbox_dict.items():
-            box=st.selectbox(value,data[key].unique(),index=None,placeholder='Any')
-            if box!=None:
-                cropped_data=cropped_data[cropped_data[key]==box]
-                cropped_data=cropped_data.reset_index(drop=True)
-    
-        days=st.number_input('Type number of days you will be staying',
-                             value=None,
-                             placeholder='None selected',
-                             step=1)
-        if days!=None:
-            cropped_data=cropped_data[
-                (cropped_data['minimum_nights']<=days) &
-                (cropped_data['maximum_nights']>=days)]
-    
-    with col1_2:
-        for key,value in slider_dict.items():
-            slide=st.slider(value,data[key].min(),data[key].max(),data[key].min())
-            check=st.checkbox('Apply '+str(slide)+' '+key)
-            if check:
-                cropped_data=cropped_data[cropped_data[key]==slide]
-                cropped_data=cropped_data.reset_index(drop=True)
-    
-    for key,value in review_dict.items():
-        slide=st.slider(value,0,int(data[key].max()),0)
-        cropped_data=cropped_data[cropped_data[key]>=slide]
-        cropped_data=cropped_data.reset_index(drop=True)
-        
-#Display the accomodations as per selected fileds
-with col2:
-    st.write('Total number of accomodations:',len(cropped_data))
-    show_data=cropped_data.drop(
-        ['number_of_reviews','reviews_per_month','coordinate1',
-         'coordinate2','coutry_code'],
-        axis=1
-        )
-    show_data
-        
-    st.write('_'*100)
-    Y_axis=st.selectbox('Select price field to view plots',
-                        ['price','security_deposit','cleaning_fee',
-                         'weekly_price','monthly_price'])
-    X_axis=st.selectbox('Select against what you would like the field',
-                        ['property_type','coutry','room_type'])
-    
-    type_val=st.selectbox('Select Min, Max, Average',
-                      ['Minimum','Average','Maximum'])
+#owverview
 
-    options=list(cropped_data[X_axis].unique())
-    values=[]
-    
-    if type_val=='Minimum':
-        for item in options:
-            values.append(
-                cropped_data[Y_axis][cropped_data[X_axis]==item].min()
-                )
-    elif type_val=='Maximum':
-        for item in options:
-            values.append(
-                cropped_data[Y_axis][cropped_data[X_axis]==item].max()
-                )
-    else:
-        for item in options:
-            values.append(
-                cropped_data[Y_axis][cropped_data[X_axis]==item].mean()
-                )
-    
-    plot_data=pd.DataFrame(
-        {
-         'X': options,
-         'Y': values,
-         }
-        )
-    
-    fig=px.bar(plot_data,x='X',y='Y')
-    fig.update_xaxes(title_text=X_axis)
-    fig.update_yaxes(title_text=Y_axis)
-    st.plotly_chart(fig)
+# GETTING USER INPUTS
+country = st.sidebar.multiselect('Country',sorted(df.Country.unique()),sorted(df.Country.unique()))
+neighbourh = st.sidebar.multiselect('City',df.City.unique())
+prop = st.sidebar.multiselect('Property type',sorted(df.Property_type.unique()),sorted(df.Property_type.unique()))
+room = st.sidebar.multiselect('Room type',sorted(df.Room_type.unique()),sorted(df.Room_type.unique()))
+bedroom = st.sidebar.multiselect('Total bedrooms',sorted(df.Total_bedrooms.unique()),sorted(df.Total_bedrooms.unique()))
+no_of_accomodates = st.sidebar.multiselect('No of guests',sorted(df.Accomodates.unique()),sorted(df.Accomodates.unique()))
+total_beds = st.sidebar.multiselect('Total beds',sorted(df.Total_beds.unique()),sorted(df.Total_beds.unique()))
+#bedroom = st.sidebar.slider('Total bedrooms',df.Total_bedrooms.min(),df.Total_bedrooms.max(),(df.Total_bedrooms.min(),df.Total_bedrooms.max()))
+#no_of_accomodates = st.sidebar.slider('No of guests',df.Accomodates.min(),df.Accomodates.max(),(df.Accomodates.min(),df.Accomodates.max()))
+#total_beds = st.sidebar.slider('Total beds',df.Total_beds.min(),df.Total_beds.max(),(df.Total_beds.min(),df.Total_beds.max()))
 
-#Display the Tableau Tables
+price = st.sidebar.slider('Price',df.Price.min(),df.Price.max(),(df.Price.min(),df.Price.max()))
+review_scor = st.sidebar.slider('Ratings',df.Review_scores.min(),df.Review_scores.max(),(df.Review_scores.min(),df.Review_scores.max()))
+#no_of_reviews = st.sidebar.slider('Number of Reviews',df.No_of_reviews.min(),df.No_of_reviews.max(),(df.No_of_reviews.min(),df.No_of_reviews.max()))
+availability = st.sidebar.slider('Availability',df.Availability_365.min(),df.Availability_365.max(),(df.Availability_365.min(),df.Availability_365.max()))
+cleaning_fee = st.sidebar.slider('Cleaning Fee',df.Cleaning_fee.min(),df.Cleaning_fee.max(),(df.Cleaning_fee.min(),df.Cleaning_fee.max()))
+cancellation_policy = st.sidebar.multiselect('Cancellation Policy',sorted(df.Cancellation_policy.unique()),sorted(df.Cancellation_policy.unique()))
+
+# CONVERTING THE USER INPUT INTO QUERY
+#neighbourhood in {neighbourh} &
+#&  Amenities in {amenities} &  Accomodates in {no_of_accomodates}
+#&  No_of_reviews in {no_of_reviews}
+query = f'Country in {country} & Room_type in {room} &  Total_bedrooms in {bedroom} & Property_type in {prop} & City in {neighbourh} &  Price >= {price[0]} & Price <= {price[1]} &  Review_scores in {review_scor} &  Accomodates in {no_of_accomodates} &  Total_beds in {total_beds} &  Cancellation_policy in {cancellation_policy} &  Availability_365 in {availability} &  Cleaning_fee in {cleaning_fee}'
 
 
-#Prwpare data for Geoplot
-map_col=['minimum_nights','maximum_nights','accommodates',
-         'bedrooms','beds','bathrooms','price','security_deposit',
-         'cleaning_fee','extra_people','guests_included','weekly_price',
-         'monthly_price','review_scores_accuracy','review_scores_cleanliness',
-         'review_scores_checkin','review_scores_communication',
-         'review_scores_location','review_scores_value','review_scores_rating']
-
-map_data=pd.DataFrame(columns=['coutry_code','country']+map_col)
-
-country_codes={'PT':'Portugal','BR':'Brazil','US':'United States',
-               'TR':'Turkey','CA':'Canada','HK':'Hong Kong','ES':'Spain',
-               'AU':'Australia','CN':'China'}
-
-alpha_2_to_3={'PT':'PRT','BR':'BRA','US':'USA','TR':'TUR','CA':'CAN',
-              'HK':'HKG','ES':'ESP','AU':'AUS','CN':'CHN'}
-
-for code,country in country_codes.items():
-    agg_data=data[data['coutry_code']==code]
-    value=[alpha_2_to_3[code],country]
-    for col in map_col:
-        value.append(agg_data[col].mean())
-    map_data.loc[len(map_data)]=value
-
-map_data=map_data.round(2)
-
-fig = px.choropleth(
-    map_data,
-    locations='coutry_code',
-    locationmode='ISO-3',
-    color='price',
-    hover_name='country',
-    hover_data=map_col,
-    color_continuous_scale='Viridis',
-    labels={'Value': 'Your Value Label'}
-)
-
-#Display Geoplot
-st.write('## Geoplot')
+# Average Price by property type
+avg_property_type= df.query(query).groupby('Property_type',as_index=False)['Price'].mean().sort_values(by='Price')
+fig = px.bar(data_frame=avg_property_type,
+                x='Property_type',
+                y='Price',
+                color='Price',
+                title='Average price per property type'
+            )
 st.plotly_chart(fig,use_container_width=True)
+
+df1 = df.query(query).groupby(["Property_type"]).size().reset_index(name="Listings").sort_values(by='Listings',ascending=False)[:10]
+fig = px.bar(df1,
+                    title='Property Type',
+                    x='Property_type',
+                    y='Listings',
+                    orientation='v',
+                    color='Property_type',
+                    color_continuous_scale=px.colors.sequential.Electric)
+st.plotly_chart(fig,use_container_width=True) 
+
+
+# Average minimum nights per Room Type
+avg_min_night_roomtype= df.query(query).groupby('Room_type',as_index=False)['Min_nights'].mean().sort_values(by='Min_nights')
+fig = px.bar(data_frame=avg_min_night_roomtype,
+                x='Room_type',
+                y='Min_nights',
+                orientation='v',
+                color='Room_type',
+                title='Average minimum nights per Room Type'
+            )
+st.plotly_chart(fig,use_container_width=True)
+
+# Average Price for city
+avg_price_city= df.query(query).groupby('City',as_index=False)['Price'].mean().sort_values(by='Price')
+fig = px.bar(data_frame=avg_price_city,
+                x='Price',
+                y='City',
+                orientation='h',
+                color='Price',
+                title='Average price per city'
+            )
+st.plotly_chart(fig,use_container_width=True)
+
+# Top cities by ratings
+top_city_ratings= df.query(query).groupby('City',as_index=False)['Review_scores'].sum().sort_values(by='Review_scores')
+fig = px.bar(data_frame=top_city_ratings,
+                x='Review_scores',
+                y='City',
+                orientation='h',
+                color='Review_scores',
+                title='Top cities by ratings'
+            )
+st.plotly_chart(fig,use_container_width=True)
+
+# Which property types have the best ratings?
+property_type_best_ratings= df.query(query).groupby('Property_type',as_index=False)['Review_scores'].count().sort_values(by='Review_scores')
+fig = px.bar(data_frame=property_type_best_ratings,
+                x='Review_scores',
+                y='Property_type',
+                orientation='h',
+                color='Review_scores',
+                title='Which property types have the best ratings?'
+            )
+st.plotly_chart(fig,use_container_width=True)
+
+    
+# TOTAL LISTINGS IN EACH ROOM TYPES PIE CHART
+df1 = df.query(query).groupby(["Room_type"]).size().reset_index(name="counts")
+fig = px.pie(df1,
+                title='Room Type',
+                names='Room_type',
+                values='counts',
+                color_discrete_sequence=px.colors.sequential.Rainbow
+            )
+fig.update_traces(textposition='outside', textinfo='value+label')
+st.plotly_chart(fig,use_container_width=True)
+
+
+# Average Price per room type
+pr_df = df.query(query).groupby('Room_type',as_index=False)['Price'].mean().sort_values(by='Price')
+fig = px.bar(data_frame=pr_df,
+                x='Room_type',
+                y='Price',
+                color='Price',
+                title='Average Price per Room type'
+            )
+st.plotly_chart(fig,use_container_width=True)
+
+
+# Average price in each country
+country_df = df.query(query).groupby('Country',as_index=False)['Price'].mean()
+fig = px.scatter_geo(data_frame=country_df,
+                                locations='Country',
+                                color= 'Price', 
+                                hover_data=['Price'],
+                                locationmode='country names',
+                                size='Price',
+                                title= 'Average Price in each Country',
+                                color_continuous_scale='agsunset'
+                    )
+st.plotly_chart(fig,use_container_width=True)
+
+# TOTAL LISTINGS BY COUNTRY CHOROPLETH MAP
+country_df = df.query(query).groupby(['Country'],as_index=False)['Name'].count().rename(columns={'Name' : 'Total_Listings'})
+fig = px.choropleth(country_df,
+                    title='Total Listings in each Country',
+                    locations='Country',
+                    locationmode='country names',
+                    color='Total_Listings',
+                    color_continuous_scale=px.colors.sequential.Plasma
+                    )
+st.plotly_chart(fig,use_container_width=True)
+
+
+        
+
