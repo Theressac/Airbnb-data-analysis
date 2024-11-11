@@ -1,17 +1,17 @@
 # Airbnb-data-analysis
 
-Introduction
+## Introduction
 
 The Airbnb Analysis project aims to analyze Airbnb data using MongoDB Atlas, perform data cleaning and preparation, develop interactive geospatial visualizations, and create dynamic plots to gain insights into pricing variations and location-based trends
 
-Table of Contents
+## Table of Contents
 
 1.	Key Technologies
 2.	Installation
 3.	Usage
 4.	Workflow
 
-Key Technologies 
+## Key Technologies 
 
 • Python scripting 
 • MongoDB 
@@ -21,7 +21,7 @@ Key Technologies
 • Numpy 
 • Plotly
 
-Installation
+## Installation
 
 To run this project, you will need to install the following packages
     pip install streamlit
@@ -31,7 +31,7 @@ To run this project, you will need to install the following packages
     pip install pymongo
     And the installation of power bi on the system
 
-Usage
+## Usage
 
 To use this project, kindly follow the following steps:
 
@@ -40,7 +40,7 @@ To use this project, kindly follow the following steps:
     3.	Run the Streamlit app: streamlit run app.py
     4.	Access the app in your browser at http://localhost:8501
 
-Workflow
+## Workflow
 
     MongoDB Connection and Data Retrieval:
       Connection established to MongoDB Atlas
@@ -60,7 +60,7 @@ Workflow
     Geospatial Visualization using Streamlit:
         We developed a Streamlit web application that utilizes geospatial data from the Airbnb dataset. Interactive maps were created to visualize            the distribution of Airbnb listings across different locations, allowing users to explore prices, ratings, and other relevant factors.
 
-Author
+## Author
 
 @Theressac
 
